@@ -1,0 +1,6 @@
+name: EasterEvent
+api: 3.3.0
+main: ryzerbe\easter\Loader
+author: BauboLP
+description: Easter Event plugin for RyZerBE
+version: 1.0
