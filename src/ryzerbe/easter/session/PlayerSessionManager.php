@@ -1,11 +1,11 @@
 <?php
-declare(strict_types=1);
-namespace ryzerbe\easter\session;
 
+declare(strict_types=1);
+
+namespace ryzerbe\easter\session;
 
 use pocketmine\Player;
 use ryzerbe\core\player\PMMPPlayer;
-
 
 class PlayerSessionManager {
 

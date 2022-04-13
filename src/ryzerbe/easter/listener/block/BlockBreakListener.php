@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace ryzerbe\easter\listener\block;
 
 use javamapconverter\skull\SkullChunkManager;
@@ -9,7 +11,6 @@ use pocketmine\utils\TextFormat;
 use ryzerbe\easter\Loader;
 use ryzerbe\easter\manager\EasterEggManager;
 use ryzerbe\easter\session\PlayerSessionManager;
-
 
 class BlockBreakListener implements Listener{
 
@@ -24,7 +25,7 @@ class BlockBreakListener implements Listener{
 			return;
 		}
 
-		if(!$playerSession->isEggMode()) {
+		if(!$playerSession->isEggMode() && !$playerSession->isBuildMode()) {
 			$event->setCancelled();
 			return;
 		}
@@ -37,7 +38,6 @@ class BlockBreakListener implements Listener{
 				$manager->removeEasterEggLocation($blockVec);
 				$player->sendMessage(Loader::PREFIX."Das Egg wurde ".TextFormat::RED.TextFormat::BOLD."entfernt");
 			}
-			return;
 		}
 	}
 }

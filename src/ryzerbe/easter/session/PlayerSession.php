@@ -1,8 +1,11 @@
 <?php
+
 declare(strict_types=1);
+
 namespace ryzerbe\easter\session;
 
 use mysqli;
+use pocketmine\level\Level;
 use pocketmine\math\Vector3;
 use pocketmine\Server;
 use pocketmine\utils\TextFormat;
@@ -13,13 +16,14 @@ use ryzerbe\core\util\LocationUtils;
 use ryzerbe\easter\Loader;
 use ryzerbe\easter\manager\EasterEggManager;
 
-
 class PlayerSession {
-
 	protected bool $eggMode = false;
+    protected bool $buildMode = false;
 
 	/** @var Vector3[]  */
 	protected array $found_eggs = [];
+
+    protected array $checkpoints = [];
 
 	public function __construct(protected PMMPPlayer $player){
 		$player->setImmobile();
@@ -57,11 +61,23 @@ class PlayerSession {
 		return $this->eggMode;
 	}
 
+    public function isBuildMode(): bool{
+        return $this->buildMode;
+    }
+
+    public function setBuildMode(bool $buildMode): void{
+        $this->buildMode = $buildMode;
+    }
+
 	public function foundEasterEgg(Vector3 $vector3): void{
 		$this->found_eggs[] = $vector3->__toString();
 		$this->getPlayer()->getRyZerPlayer()->addCoins(EasterEggManager::getInstance()->coinsPerHead, false, true);
 		$this->getPlayer()->sendMessage(Loader::PREFIX.LanguageProvider::getMessageContainer("egg-found", $this->getPlayer()));
 		$this->getPlayer()->playSound("block.turtle_egg.crack");
+
+        if(count($this->found_eggs) >= count(EasterEggManager::getInstance()->getEasterEggLocations())) {
+            //TODO: Reward
+        }
 	}
 
 	public function alreadyFound(Vector3 $vector3): bool{
@@ -84,10 +100,6 @@ class PlayerSession {
 		});
 	}
 
-	/**
-	 * Function getPlayer
-	 * @return PMMPPlayer
-	 */
 	public function getPlayer(): PMMPPlayer{
 		return $this->player;
 	}
@@ -102,4 +114,12 @@ class PlayerSession {
 			$this->getPlayer()->sendActionBarMessage(LanguageProvider::getMessageContainer("egg-count-info", $this->getPlayer(), ["#found" => $foundCount, "#max" => $maxEggCount, "#diff" => $haveToFind]));
 		}
 	}
+
+    public function hasCheckpoint(Vector3 $vector3): bool {
+        return in_array(Level::blockHash($vector3->x, $vector3->y, $vector3->z), $this->checkpoints);
+    }
+
+    public function addCheckpoint(Vector3 $vector3): void {
+        $this->checkpoints[] = Level::blockHash($vector3->x, $vector3->y, $vector3->z);
+    }
 }

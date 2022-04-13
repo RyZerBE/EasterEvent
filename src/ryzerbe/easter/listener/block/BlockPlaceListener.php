@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace ryzerbe\easter\listener\block;
 
 use javamapconverter\utils\ItemUtils;
@@ -9,7 +11,6 @@ use pocketmine\utils\TextFormat;
 use ryzerbe\easter\Loader;
 use ryzerbe\easter\manager\EasterEggManager;
 use ryzerbe\easter\session\PlayerSessionManager;
-
 
 class BlockPlaceListener implements Listener{
 
@@ -23,7 +24,7 @@ class BlockPlaceListener implements Listener{
 			return;
 		}
 
-		if(!$playerSession->isEggMode()) {
+		if(!$playerSession->isEggMode() && !$playerSession->isBuildMode()) {
 			$event->setCancelled();
 			return;
 		}
@@ -31,7 +32,6 @@ class BlockPlaceListener implements Listener{
 		if(ItemUtils::hasItemTag($item, "head")) {
 			EasterEggManager::getInstance()->addEasterEggLocation($block->asVector3());
 			$player->sendMessage(Loader::PREFIX."Das Egg wurde ".TextFormat::GREEN.TextFormat::BOLD."registriert");
-			return;
 		}
 	}
 }

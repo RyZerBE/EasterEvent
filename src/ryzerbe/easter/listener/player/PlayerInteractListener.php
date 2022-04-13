@@ -1,5 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace ryzerbe\easter\listener\player;
 
 use javamapconverter\skull\SkullChunkManager;
@@ -10,7 +12,6 @@ use ryzerbe\core\player\PMMPPlayer;
 use ryzerbe\easter\Loader;
 use ryzerbe\easter\manager\EasterEggManager;
 use ryzerbe\easter\session\PlayerSessionManager;
-
 
 class PlayerInteractListener implements Listener{
 

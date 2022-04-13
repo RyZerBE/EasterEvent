@@ -1,7 +1,8 @@
 <?php
-declare(strict_types=1);
-namespace ryzerbe\easter\command;
 
+declare(strict_types=1);
+
+namespace ryzerbe\easter\command;
 
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
@@ -10,9 +11,7 @@ use ryzerbe\core\player\PMMPPlayer;
 use ryzerbe\easter\manager\EasterEggManager;
 use ryzerbe\easter\session\PlayerSessionManager;
 
-
 class EggModeCommand extends Command {
-
 	public function __construct(){
 		parent::__construct("eggmode", "Toggle Egg Mode", "", []);
 		$this->setPermission("ryzer.admin");

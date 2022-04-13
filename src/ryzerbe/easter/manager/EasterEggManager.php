@@ -1,19 +1,19 @@
 <?php
-declare(strict_types=1);
-namespace ryzerbe\easter\manager;
 
+declare(strict_types=1);
+
+namespace ryzerbe\easter\manager;
 
 use pocketmine\math\Vector3;
 use pocketmine\utils\SingletonTrait;
-use ryzerbe\core\provider\ChatEmojiProvider;
+use ryzerbe\core\util\Vector3Utils;
 use ryzerbe\easter\Loader;
-
 
 class EasterEggManager {
 	use SingletonTrait;
 
 	/** @var Vector3[]  */
-	private array $easterEggLocations = [];
+	private array $easterEggLocations;
 
 	public int $coinsPerHead = 100;
 
@@ -21,37 +21,29 @@ class EasterEggManager {
 		$config = Loader::getInstance()->getConfig();
 		$this->coinsPerHead = $config->get("coins_per_egg", 100);
 		$this->easterEggLocations = (array) json_decode($config->get("egg_locations", "[]"));
+
+        foreach($this->easterEggLocations as $sVector3 => $easterEggLocation) {
+            if(is_string($easterEggLocation)) {
+                $this->easterEggLocations[$sVector3] = Vector3Utils::fromString($easterEggLocation);
+                continue;
+            }
+            $this->easterEggLocations[$sVector3] = new Vector3($easterEggLocation->x, $easterEggLocation->y, $easterEggLocation->z);
+        }
 	}
 
-	/**
-	 * Function addEasterEggLocation
-	 * @param Vector3 $vector3
-	 * @return void
-	 */
 	public function addEasterEggLocation(Vector3 $vector3){
-		$this->easterEggLocations[$vector3->__toString()] = $vector3;
+		$this->easterEggLocations[$vector3->__toString()] = Vector3Utils::toString($vector3);
 	}
 
-	/**
-	 * Function removeEasterEggLocation
-	 * @param Vector3 $vector3
-	 * @return void
-	 */
 	public function removeEasterEggLocation(Vector3 $vector3){
 		unset($this->easterEggLocations[$vector3->__toString()]);
 	}
 
-	/**
-	 * Function isEasterEgg
-	 * @param Vector3 $vector3
-	 * @return bool
-	 */
 	public function isEasterEgg(Vector3 $vector3): bool{
 		return isset($this->easterEggLocations[$vector3->__toString()]);
 	}
 
 	/**
-	 * Function getEasterEggLocations
 	 * @return Vector3[]
 	 */
 	public function getEasterEggLocations(): array{
