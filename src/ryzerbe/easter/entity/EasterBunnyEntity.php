@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace ryzerbe\easter\entity;
 
 use jojoe77777\FormAPI\SimpleForm;
+use pocketmine\entity\Entity;
 use pocketmine\entity\Human;
 use pocketmine\entity\Skin;
 use pocketmine\event\entity\EntityDamageByEntityEvent;
@@ -12,6 +13,7 @@ use pocketmine\level\format\Chunk;
 use pocketmine\level\Level;
 use pocketmine\math\Vector3;
 use pocketmine\nbt\tag\CompoundTag;
+use pocketmine\network\mcpe\protocol\MovePlayerPacket;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat;
 use ryzerbe\core\language\LanguageProvider;
@@ -91,5 +93,35 @@ class EasterBunnyEntity extends Human implements ChunkLoader
 	 * @inheritDoc
 	 */
 	public function onBlockChanged(Vector3 $block){
+	}
+
+	/**
+	 * @param int $currentTick
+	 * @return bool
+	 */
+	public function onUpdate(int $currentTick): bool{
+		/* @var int $maxDistance The distance the entity needed to be within */
+		/** @var Entity $entity The entity within the radius */
+		foreach($this->getLevel()->getNearbyEntities($this->getBoundingBox()->expandedCopy(5, 5, 5)) as $viewer){
+			if($viewer instanceof Player){
+				$dist = $this->distanceSquared($viewer);
+				$dir = $viewer->subtract($this);
+				$dir = $dist <= 0 ? $dir : $dir->divide($dist);
+
+				$yaw = rad2deg(atan2(-$dir->getX(), $dir->getZ()));
+				$pitch = rad2deg(atan(-$dir->getY()));
+
+				$this->setRotation($this->yaw, $this->pitch);
+
+				$pk = new MovePlayerPacket();
+				$pk->entityRuntimeId = $this->getId();
+				$pk->position = $this->getOffsetPosition($this->asVector3());
+				$pk->yaw = $yaw;
+				$pk->headYaw = $yaw;
+				$pk->pitch = $pitch;
+				$viewer->dataPacket($pk);
+			}
+		}
+		return true;
 	}
 }
