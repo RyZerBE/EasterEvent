@@ -9,6 +9,6 @@ use pocketmine\event\player\PlayerExhaustEvent;
 
 class PlayerExhaustListener implements Listener {
     public function onPlayerExhaust(PlayerExhaustEvent $event): void {
-        $event->setCancelled();
+        $event->getPlayer()->setFood($event->getPlayer()->getMaxFood());
     }
 }

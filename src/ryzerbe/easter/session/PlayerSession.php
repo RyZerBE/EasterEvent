@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace ryzerbe\easter\session;
 
 use mysqli;
+use pocketmine\block\BlockIds;
+use pocketmine\item\Item;
+use pocketmine\item\ItemIds;
 use pocketmine\level\Level;
 use pocketmine\math\Vector3;
 use pocketmine\Server;
@@ -12,7 +15,9 @@ use pocketmine\utils\TextFormat;
 use ryzerbe\core\language\LanguageProvider;
 use ryzerbe\core\player\PMMPPlayer;
 use ryzerbe\core\util\async\AsyncExecutor;
+use ryzerbe\core\util\customitem\CustomItemManager;
 use ryzerbe\core\util\LocationUtils;
+use ryzerbe\easter\item\BackToCheckPointItem;
 use ryzerbe\easter\Loader;
 use ryzerbe\easter\manager\EasterEggManager;
 
@@ -27,6 +32,8 @@ class PlayerSession {
 
 	public function __construct(protected PMMPPlayer $player){
 		$player->setImmobile();
+		$inventory = $player->getInventory();
+		$inventory->clearAll();
 		$this->load();
 	}
 
@@ -53,7 +60,13 @@ class PlayerSession {
 
 			$player->teleport(LocationUtils::fromString($result["position"]));
 			$playerSession->found_eggs = json_decode($result["eggs"]);
+			$playerSession->checkpoints = json_decode($result["checkpoints"]);
 			$player->setImmobile(false);
+
+			$inventory = $player->getInventory();
+			$inventory->setContents([
+				4 => CustomItemManager::getInstance()->getCustomItemByClass(BackToCheckPointItem::class)->getItem()
+			]);
 		});
 	}
 
@@ -94,9 +107,10 @@ class PlayerSession {
 		$player = $this->getPlayer();
 		$playerName = $this->getPlayer()->getName();
 		$eggs = json_encode($this->found_eggs);
+		$checkPoints = json_encode($this->checkpoints);
 		$location = LocationUtils::toString($player->asLocation());
-		AsyncExecutor::submitMySQLAsyncTask("Easter", function (mysqli $mysqli) use ($playerName, $location, $eggs): void{
-			$mysqli->query("INSERT INTO `data`(`player`, `position`, `eggs`) VALUES ('$playerName', '$location', '$eggs') ON DUPLICATE KEY UPDATE position='$location',eggs='$eggs'");
+		AsyncExecutor::submitMySQLAsyncTask("Easter", function (mysqli $mysqli) use ($playerName, $location, $eggs, $checkPoints): void{
+			$mysqli->query("INSERT INTO `data`(`player`, `position`, `eggs`, `checkpoints`) VALUES ('$playerName', '$location', '$eggs', '$checkPoints') ON DUPLICATE KEY UPDATE position='$location',eggs='$eggs',checkpoints='$checkPoints'");
 		});
 	}
 
@@ -117,6 +131,13 @@ class PlayerSession {
 
     public function hasCheckpoint(Vector3 $vector3): bool {
         return in_array(Level::blockHash($vector3->x, $vector3->y, $vector3->z), $this->checkpoints);
+    }
+
+	public function getLastCheckPoint(): ?Vector3{
+		if(count($this->checkpoints) <= 0) return null;
+
+		Level::getBlockXYZ($this->checkpoints[count($this->checkpoints) - 1], $x, $y, $z);
+		return new Vector3($x, $y, $z);
     }
 
     public function addCheckpoint(Vector3 $vector3): void {

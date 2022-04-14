@@ -4,15 +4,20 @@ declare(strict_types=1);
 
 namespace ryzerbe\easter;
 
+use pocketmine\entity\Entity;
 use pocketmine\math\Vector3;
 use pocketmine\plugin\PluginBase;
 use pocketmine\Server;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
+use ryzerbe\core\RyZerBE;
+use ryzerbe\core\util\customitem\CustomItemManager;
 use ryzerbe\core\util\loader\ListenerDirectoryLoader;
 use ryzerbe\easter\command\BuildModeCommand;
 use ryzerbe\easter\command\EggModeCommand;
 use ryzerbe\easter\command\SaveWorldCommand;
+use ryzerbe\easter\entity\EasterBunnyEntity;
+use ryzerbe\easter\item\BackToCheckPointItem;
 use ryzerbe\easter\manager\EasterEggManager;
 use ryzerbe\easter\registry\CheckpointRegistry;
 use ryzerbe\easter\registry\MinigameRegistry;
@@ -33,15 +38,15 @@ class Loader extends PluginBase {
 			ListenerDirectoryLoader::load($this, $this->getFile(), __DIR__ . "/listener/");
 		} catch (\ReflectionException $e) {}
 
-
 		$this->saveResource("config.json");
 		self::$jsonConfig = new Config($this->getDataFolder()."config.json");
 		EasterEggManager::getInstance();
 
+
 		Server::getInstance()->getCommandMap()->registerAll("easter", [
 			new EggModeCommand(),
             new SaveWorldCommand(),
-            new BuildModeCommand(),
+            new BuildModeCommand()
 		]);
 		$this->getScheduler()->scheduleRepeatingTask(new UpdateScheduler(), 1);
 
@@ -53,7 +58,10 @@ class Loader extends PluginBase {
         new MinigameRegistry();
         new CheckpointRegistry();
 
-        new Hologram(new Vector3(421.5, 20, 88.5), "§r§7§l§o-- §r§6§l§oTower of pain §r§7§l§o--", false);
+        new Hologram(new Vector3(421.5, 21, 88.5), "§r§7§l§o-- §r§6§l§oTower of pain §r§7§l§o--", false);
+
+		CustomItemManager::getInstance()->registerCustomItem(new BackToCheckPointItem());
+		Entity::registerEntity(EasterBunnyEntity::class, true);
 	}
 
 	public static function getInstance(): Loader{
