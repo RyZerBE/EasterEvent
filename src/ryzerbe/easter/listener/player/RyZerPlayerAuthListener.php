@@ -29,9 +29,11 @@ class RyZerPlayerAuthListener implements Listener{
 
 		$entity = new EasterBunnyEntity(Server::getInstance()->getDefaultLevel(), Entity::createBaseNBT(new Vector3(474.5, 19, 10.5)));
 		$entity->setNameTag(TextFormat::RED.TextFormat::BOLD."EASTER BUNNY");
-		$entity->setSkin(new Skin(uniqid(), SkinUtils::fromImage("/root/RyzerCloud/data/NPC/EasterBunny.png"), "", $player->getSkin()->getResourcePatch(), $player->getSkin()->getGeometryData()));
+		$entity->setSkin(new Skin(uniqid(), SkinUtils::fromImage("/root/RyzerCloud/data/NPC/EasterBunnyModel.png"), "", "geometry.unknown", file_get_contents("/root/RyzerCloud/data/NPC/Bunny.geo.json")));
 		$entity->setNameTagAlwaysVisible();
+		$entity->setScale(1.7);
 		$entity->spawnToAll();
+		$entity->lookTo($player);
 		$this->spawned = true;
 	}
 }

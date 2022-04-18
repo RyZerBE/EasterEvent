@@ -32,7 +32,7 @@ class EasterEggManager {
 	}
 
 	public function addEasterEggLocation(Vector3 $vector3){
-		$this->easterEggLocations[$vector3->__toString()] = Vector3Utils::toString($vector3);
+		$this->easterEggLocations[$vector3->__toString()] = $vector3;
 	}
 
 	public function removeEasterEggLocation(Vector3 $vector3){

@@ -16,14 +16,20 @@ use ryzerbe\core\language\LanguageProvider;
 use ryzerbe\core\player\PMMPPlayer;
 use ryzerbe\core\util\async\AsyncExecutor;
 use ryzerbe\core\util\customitem\CustomItemManager;
+use ryzerbe\core\util\discord\DiscordMessage;
 use ryzerbe\core\util\LocationUtils;
 use ryzerbe\easter\item\BackToCheckPointItem;
+use ryzerbe\easter\item\BackToSpawnItem;
+use ryzerbe\easter\item\BackToTowerItem;
+use ryzerbe\easter\item\HidePlayerItem;
 use ryzerbe\easter\Loader;
 use ryzerbe\easter\manager\EasterEggManager;
 
 class PlayerSession {
 	protected bool $eggMode = false;
     protected bool $buildMode = false;
+    protected bool $towerReached = false;
+    public bool $hidePlayer = false;
 
 	/** @var Vector3[]  */
 	protected array $found_eggs = [];
@@ -61,11 +67,14 @@ class PlayerSession {
 			$player->teleport(LocationUtils::fromString($result["position"]));
 			$playerSession->found_eggs = json_decode($result["eggs"]);
 			$playerSession->checkpoints = json_decode($result["checkpoints"]);
+			$playerSession->towerReached = boolval($result["reached_tower"]);
 			$player->setImmobile(false);
 
 			$inventory = $player->getInventory();
 			$inventory->setContents([
-				4 => CustomItemManager::getInstance()->getCustomItemByClass(BackToCheckPointItem::class)->getItem()
+				4 => (!$playerSession->towerReached) ? CustomItemManager::getInstance()->getCustomItemByClass(BackToCheckPointItem::class)->getItem() : CustomItemManager::getInstance()->getCustomItemByClass(BackToTowerItem::class)->getItem(),
+				8 => CustomItemManager::getInstance()->getCustomItemByClass(BackToSpawnItem::class)->getItem(),
+				0 => CustomItemManager::getInstance()->getCustomItemByClass(HidePlayerItem::class)->getItem()
 			]);
 		});
 	}
@@ -88,8 +97,25 @@ class PlayerSession {
 		$this->getPlayer()->sendMessage(Loader::PREFIX.LanguageProvider::getMessageContainer("egg-found", $this->getPlayer()));
 		$this->getPlayer()->playSound("block.turtle_egg.crack");
 
-        if(count($this->found_eggs) >= count(EasterEggManager::getInstance()->getEasterEggLocations())) {
-            //TODO: Reward
+		$max = count(EasterEggManager::getInstance()->getEasterEggLocations());
+        if(count($this->found_eggs) >= $max) {
+            foreach (Server::getInstance()->getOnlinePlayers() as $onlinePlayer) {
+            	$onlinePlayer->sendMessage("\n\n\n".Loader::PREFIX.LanguageProvider::getMessageContainer("easter-all-eggs-found-broadcast", $onlinePlayer, ["#max" => $max, "#player" => $this->getPlayer()->getName()]));
+			}
+
+			$discordMessage = new DiscordMessage("https://discord.com/api/webhooks/964845709750861834/pyEGcVZongx7aiQXfb4_Js1wa3zIOkaK0ZZ6rH6MvNBCR5erbU7mdjXnE98yx9UZf243");
+			$discordMessage->setMessage($this->getPlayer()->getName()." hat alle Ostereier gefunden");
+			$discordMessage->send();
+
+            $playerName = $this->getPlayer()->getName();
+            AsyncExecutor::submitMySQLAsyncTask("Lobby", function (mysqli $mysqli) use ($playerName): void{
+            	$mysqli->query("UPDATE `LottoTickets` SET tickets=tickets+5 WHERE playername='$playerName'");
+			}, function (Server $server, $result) use ($playerName): void{
+            	$player = $server->getPlayerExact($playerName);
+            	if($player === null) return;
+
+            	$player->sendMessage(Loader::PREFIX.TextFormat::GRAY."Du hast ".TextFormat::YELLOW."5x Lottotickets ".TextFormat::GREEN."geschenkt bekommen");
+			});
         }
 	}
 
@@ -109,8 +135,9 @@ class PlayerSession {
 		$eggs = json_encode($this->found_eggs);
 		$checkPoints = json_encode($this->checkpoints);
 		$location = LocationUtils::toString($player->asLocation());
-		AsyncExecutor::submitMySQLAsyncTask("Easter", function (mysqli $mysqli) use ($playerName, $location, $eggs, $checkPoints): void{
-			$mysqli->query("INSERT INTO `data`(`player`, `position`, `eggs`, `checkpoints`) VALUES ('$playerName', '$location', '$eggs', '$checkPoints') ON DUPLICATE KEY UPDATE position='$location',eggs='$eggs',checkpoints='$checkPoints'");
+		$reached_tower = intval($this->hasTowerFinished());
+		AsyncExecutor::submitMySQLAsyncTask("Easter", function (mysqli $mysqli) use ($playerName, $location, $eggs, $checkPoints, $reached_tower): void{
+			$mysqli->query("INSERT INTO `data`(`player`, `position`, `eggs`, `checkpoints`, `reached_tower`) VALUES ('$playerName', '$location', '$eggs', '$checkPoints', '$reached_tower') ON DUPLICATE KEY UPDATE position='$location',eggs='$eggs',checkpoints='$checkPoints',reached_tower='$reached_tower'");
 		});
 	}
 
@@ -143,4 +170,29 @@ class PlayerSession {
     public function addCheckpoint(Vector3 $vector3): void {
         $this->checkpoints[] = Level::blockHash($vector3->x, $vector3->y, $vector3->z);
     }
+
+	public function finishTower(): void{
+		foreach (Server::getInstance()->getOnlinePlayers() as $onlinePlayer) {
+			$onlinePlayer->sendMessage("\n\n\n".Loader::PREFIX.LanguageProvider::getMessageContainer("easter-tower-reached", $onlinePlayer, ["#player" => $this->getPlayer()->getName()]));
+		}
+
+		$discordMessage = new DiscordMessage("https://discord.com/api/webhooks/964845709750861834/pyEGcVZongx7aiQXfb4_Js1wa3zIOkaK0ZZ6rH6MvNBCR5erbU7mdjXnE98yx9UZf243");
+		$discordMessage->setMessage($this->getPlayer()->getName()." hat den Tower geschafft");
+		$discordMessage->send();
+
+		$this->getPlayer()->sendMessage(Loader::PREFIX.LanguageProvider::getMessageContainer("tower-reach-info", $this->getPlayer()));
+		$this->getPlayer()->playSound("random.levelup");
+		$this->getPlayer()->getRyZerPlayer()->addCoins(50000, false, true);
+		$this->towerReached = true;
+		$inventory = $this->getPlayer()->getInventory();
+		$inventory->setContents([
+			4 => CustomItemManager::getInstance()->getCustomItemByClass(BackToTowerItem::class)->getItem(),
+			8 => CustomItemManager::getInstance()->getCustomItemByClass(BackToSpawnItem::class)->getItem(),
+			0 => CustomItemManager::getInstance()->getCustomItemByClass(HidePlayerItem::class)->getItem()
+		]);
+	}
+
+	public function hasTowerFinished(): bool{
+		return $this->towerReached;
+	}
 }

@@ -18,6 +18,9 @@ use ryzerbe\easter\command\EggModeCommand;
 use ryzerbe\easter\command\SaveWorldCommand;
 use ryzerbe\easter\entity\EasterBunnyEntity;
 use ryzerbe\easter\item\BackToCheckPointItem;
+use ryzerbe\easter\item\BackToSpawnItem;
+use ryzerbe\easter\item\BackToTowerItem;
+use ryzerbe\easter\item\HidePlayerItem;
 use ryzerbe\easter\manager\EasterEggManager;
 use ryzerbe\easter\registry\CheckpointRegistry;
 use ryzerbe\easter\registry\MinigameRegistry;
@@ -59,8 +62,13 @@ class Loader extends PluginBase {
         new CheckpointRegistry();
 
         new Hologram(new Vector3(421.5, 21, 88.5), "§r§7§l§o-- §r§6§l§oTower of pain §r§7§l§o--", false);
+        new Hologram(new Vector3(397.5, 83, 102.5), "§r§7§l§o-- §r§d§l§oFINISH THE TOWER §r§7§l§o--", false);
+        new Hologram(new Vector3(421.5, 21, 92.5), "§r§7§l§o -- §r§e§l§o Tower Rewards §r§7§l§o --\n\n§7=> §e50.000 Coins\n§7=> §eEaster Egg as Bedwars Stick\n§7=> §eAccess to a special giveaway on Discord\n§7=> §eThe fastest players get access to /setstatus in the lobby", false);
 
 		CustomItemManager::getInstance()->registerCustomItem(new BackToCheckPointItem());
+		CustomItemManager::getInstance()->registerCustomItem(new BackToTowerItem());
+		CustomItemManager::getInstance()->registerCustomItem(new BackToSpawnItem());
+		CustomItemManager::getInstance()->registerCustomItem(new HidePlayerItem());
 		Entity::registerEntity(EasterBunnyEntity::class, true);
 	}
 

@@ -6,6 +6,7 @@ namespace ryzerbe\easter\item;
 use pocketmine\block\BlockIds;
 use pocketmine\item\Item;
 use pocketmine\level\sound\EndermanTeleportSound;
+use pocketmine\math\Vector3;
 use pocketmine\utils\TextFormat;
 use ryzerbe\core\language\LanguageProvider;
 use ryzerbe\core\player\PMMPPlayer;
@@ -24,6 +25,7 @@ class BackToCheckPointItem extends CustomItem{
 		if($player->hasItemCooldown($item)) return;
 		$playerSession = PlayerSessionManager::get($player);
 		if($playerSession === null) return;
+		$player->resetItemCooldown($item, 10);
 
 		$checkpoint = $playerSession->getLastCheckPoint();
 		if($checkpoint === null) {
@@ -31,8 +33,12 @@ class BackToCheckPointItem extends CustomItem{
 			return;
 		}
 
+		if($player->distance(new Vector3(421.5, $checkpoint->getY(), 88.5)) > 128) {
+			$player->sendMessage(Loader::PREFIX.LanguageProvider::getMessageContainer("easter-tower-distance", $player));
+			return;
+		}
+
 		$player->teleport($checkpoint);
 		$player->getLevel()->addSound(new EndermanTeleportSound($checkpoint), [$player]);
-		$player->resetItemCooldown($item, 10);
 	}
 }

@@ -20,8 +20,7 @@ use ryzerbe\core\language\LanguageProvider;
 use ryzerbe\core\util\SkinUtils;
 
 
-class EasterBunnyEntity extends Human implements ChunkLoader
-{
+class EasterBunnyEntity extends Human implements ChunkLoader{
 	/**
 	 * TopShieldEntity constructor.
 	 * @param Level $level
@@ -39,11 +38,12 @@ class EasterBunnyEntity extends Human implements ChunkLoader
 	 */
 	public function attack(EntityDamageEvent $source): void{
 		$source->setCancelled();
-		if($source instanceof EntityDamageByEntityEvent) {
+		if ($source instanceof EntityDamageByEntityEvent) {
 			$player = $source->getDamager();
-			if($player instanceof Player) {
-				$form = new SimpleForm(function (Player $player, $data): void{});
-				$form->setTitle(TextFormat::RED.TextFormat::BOLD."EASTER BUNNY");
+			if ($player instanceof Player) {
+				$form = new SimpleForm(function (Player $player, $data): void{
+				});
+				$form->setTitle(TextFormat::RED . TextFormat::BOLD . "EASTER BUNNY");
 				$form->setContent(LanguageProvider::getMessageContainer("easter-bunny-form-content", $player));
 				$form->sendToPlayer($player);
 			}
@@ -95,33 +95,12 @@ class EasterBunnyEntity extends Human implements ChunkLoader
 	public function onBlockChanged(Vector3 $block){
 	}
 
-	/**
-	 * @param int $currentTick
-	 * @return bool
-	 */
-	public function onUpdate(int $currentTick): bool{
-		/* @var int $maxDistance The distance the entity needed to be within */
-		/** @var Entity $entity The entity within the radius */
-		foreach($this->getLevel()->getNearbyEntities($this->getBoundingBox()->expandedCopy(5, 5, 5)) as $viewer){
-			if($viewer instanceof Player){
-				$dist = $this->distanceSquared($viewer);
-				$dir = $viewer->subtract($this);
-				$dir = $dist <= 0 ? $dir : $dir->divide($dist);
-
-				$yaw = rad2deg(atan2(-$dir->getX(), $dir->getZ()));
-				$pitch = rad2deg(atan(-$dir->getY()));
-
-				$this->setRotation($this->yaw, $this->pitch);
-
-				$pk = new MovePlayerPacket();
-				$pk->entityRuntimeId = $this->getId();
-				$pk->position = $this->getOffsetPosition($this->asVector3());
-				$pk->yaw = $yaw;
-				$pk->headYaw = $yaw;
-				$pk->pitch = $pitch;
-				$viewer->dataPacket($pk);
-			}
-		}
-		return true;
+	public function lookTo(Player $viewer): void{
+		$dist = $this->distanceSquared($viewer);
+		$dir = $viewer->subtract($this);
+		$dir = $dist <= 0 ? $dir : $dir->divide($dist);
+		$yaw = rad2deg(atan2(-$dir->getX(), $dir->getZ()));
+		$pitch = rad2deg(atan(-$dir->getY()));
+		$this->teleport($this->asVector3(), $yaw, $pitch);
 	}
 }
